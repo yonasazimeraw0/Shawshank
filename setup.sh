@@ -34,5 +34,7 @@ echo "  Run 'ls' to see your files."
 echo "  Start with: python add.py"
 echo "---------------------------------------"
 
+echo "cd ~/Shawshank" >> ~/.bashrc
+
 # This keeps the user inside the Shawshank folder after the script ends
 exec bash
