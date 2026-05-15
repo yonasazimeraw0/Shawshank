@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-"""Telegram Account Manager - Fake Device Edition"""
 
 import os
 import sys
@@ -15,10 +14,8 @@ from pyrogram import Client
 from pyrogram.errors import PhoneNumberBanned, FloodWait, SessionPasswordNeeded
 from colorama import init, Fore
 
-# Initialize colorama
 init(autoreset=True)
 
-# Configuration
 API_ID = 6627460
 API_HASH = "27a53a0965e486a2bc1b1fcde473b1c4"
 SESSIONS_DIR = Path("sessions")
@@ -35,7 +32,6 @@ class Style:
     BOLD = "\033[1m"
 
 def get_random_device():
-    """Generates a random hardware profile for common African market phones"""
     devices = [
         {"model": "Tecno Spark 10 Pro", "sys": "Android 13"},
         {"model": "Tecno Camon 20", "sys": "Android 13"},
@@ -49,7 +45,6 @@ def get_random_device():
         {"model": "Vivo Y16", "sys": "Android 12"}
     ]
     device = random.choice(devices)
-    # Versions are slightly randomized to look organic
     app_version = f"{random.randint(9, 10)}.{random.randint(0, 9)}.{random.randint(0, 5)}"
     return device["model"], device["sys"], app_version
 
@@ -96,9 +91,27 @@ class AccountManager:
         self._save_accounts()
         return new_accounts
 
+    def delete_account(self, phone: str) -> bool:
+        account_to_remove = None
+        for account in self._accounts:
+            if account.phone == phone:
+                account_to_remove = account
+                break
+        
+        if account_to_remove:
+            self._accounts.remove(account_to_remove)
+            self._save_accounts()
+            
+            if account_to_remove.exists:
+                try:
+                    account_to_remove.session_path.unlink()
+                except Exception as e:
+                    print(f"{Style.WARNING}⚠️ Removed from list, but failed to delete file: {e}")
+            return True
+        return False
+
 @asynccontextmanager
 async def telegram_session(phone: str):
-    # Use randomized device info even for checks
     model, sys_ver, app_ver = get_random_device()
     client = Client(
         name=phone,
@@ -142,7 +155,7 @@ async def main():
     manager = AccountManager()
     while True:
         print(f"\n{Style.INFO}--- Account Manager  ---")
-        print("1. Add accounts\n2. Display all\n3. Quit")
+        print("1. Add accounts\n2. Display all\n3. Delete account\n4. Quit")
         choice = input(f"\n{Style.BOLD}🎯 Choice: {Style.RESET}")
 
         if choice == '1':
@@ -157,6 +170,29 @@ async def main():
             print(f"\nTotal: {len(manager._accounts)}")
             for a in manager._accounts: print(f"- {a.phone} ({'Exists' if a.exists else 'No Session'})")
         elif choice == '3':
+            if not manager._accounts:
+                print(f"{Style.WARNING}No accounts available to delete.")
+                continue
+            
+            print(f"\n{Style.INFO}Available accounts:")
+            for idx, a in enumerate(manager._accounts, start=1):
+                print(f"{idx}. {a.phone}")
+                
+            try:
+                target_idx = int(input(f"\nSelect account index to delete (1-{len(manager._accounts)}): ")) - 1
+                if 0 <= target_idx < len(manager._accounts):
+                    target_phone = manager._accounts[target_idx].phone
+                    confirm = 'y'
+                    if confirm == 'y':
+                        if manager.delete_account(target_phone):
+                            print(f"{Style.SUCCESS}🗑️ Successfully deleted {target_phone} and its session.")
+                        else:
+                            print(f"{Style.ERROR}❌ Failed to delete account.")
+                else:
+                    print(f"{Style.ERROR}Invalid selection.")
+            except ValueError:
+                print(f"{Style.ERROR}Please enter a valid number.")
+        elif choice == '4':
             break
 
 if __name__ == "__main__":
