@@ -1,5 +1,5 @@
+
 #!/usr/bin/env python3
-"""Telegram Member Scraper & Adder - Licensed Version"""
 
 import os
 import sys
@@ -26,20 +26,16 @@ from pyrogram.errors import (
 )
 from colorama import init, Fore
 
-# Initialize colors
 init(autoreset=True)
 
-# Configuration
 API_ID = 6627460
 API_HASH = "27a53a0965e486a2bc1b1fcde473b1c4"
 SESSIONS_DIR = Path("sessions")
 ACCOUNTS_FILE = Path("vars.txt")
 STATUS_FILE = Path("status.dat")
-USAGE_FILE = Path(".usage_data.dat")
+USAGE_FILE = Path("count.dat")
 
-# SHA-256 Hash of your password. 
-# Current Password: "MEMBER-PRO-2026"
-ENCRYPTED_KEY_HASH = "7a40b39e6a98f4863f619e830f898305c6d36e86427382d56a76059d6092040b"
+ENCRYPTED_KEY_HASH = "240eba0bfa9b1b06c7dd023d3b20f0218f89ef4d7c4ac3ac7f578e27aaac8535"
 
 SESSIONS_DIR.mkdir(exist_ok=True)
 
@@ -59,13 +55,15 @@ class Account:
     def session_name(self) -> str:
         return str(SESSIONS_DIR / self.phone)
 
-# --- License Logic ---
 def check_license():
     usage_count = 0
     if USAGE_FILE.exists():
         try:
             with open(USAGE_FILE, 'rb') as f:
-                usage_count = pickle.load(f)
+                data = pickle.load(f)
+                if data == "UNLOCKED":
+                    return
+                usage_count = int(data)
         except:
             usage_count = 0
 
@@ -73,16 +71,18 @@ def check_license():
         print(f"{Color.Y}[!] Trial period ended. License Key required.{Color.RS}")
         user_input = input(f"{Color.CY}Enter Password: {Color.RS}").strip()
         
-        # Hash user input to compare with stored hash
         input_hash = hashlib.sha256(user_input.encode()).hexdigest()
         
         if input_hash != ENCRYPTED_KEY_HASH:
             print(f"{Color.R}[!] Incorrect Password. Access Denied.{Color.RS}")
             sys.exit(1)
         else:
-            print(f"{Color.LG}[+] Access Granted.{Color.RS}")
-    
-    return usage_count
+            print(f"{Color.LG}[+] Access Granted. Permanently Unlocked.{Color.RS}")
+            with open(USAGE_FILE, 'wb') as f:
+                pickle.dump("UNLOCKED", f)
+            return
+
+    increment_usage(usage_count)
 
 def increment_usage(current_count):
     with open(USAGE_FILE, 'wb') as f:
@@ -204,10 +204,9 @@ class AccountManager:
             print(f"Error loading accounts: {e}")
 
 async def main():
-    print(f"\n{Color.CY}Telegram Multi-Account Adder v2.0{Color.RS}")
+    check_license()
     
-    # 1. License Check
-    current_usage = check_license()
+    print(f"\n{Color.CY}Telegram Multi-Account Adder v2.0{Color.RS}")
     
     manager = AccountManager()
     if not manager.accounts:
@@ -256,10 +255,6 @@ async def main():
             if flood: continue
 
     print(f"\n{Color.LG}Task Complete. Total added: {total_added}{Color.RS}")
-    
-    # 2. Update usage count if work was done
-    if total_added > 0:
-        increment_usage(current_usage)
 
 if __name__ == "__main__":
     try:
