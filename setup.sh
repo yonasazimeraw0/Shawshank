@@ -19,9 +19,9 @@ git clone https://github.com/yonasazimeraw0/Shawshank
 # 3. Enter the directory
 cd Shawshank
 
-# 4. Install requirements
+# 4. Install requirements (fix typo)
 if [ -f "requir.txt" ]; then
-    pip install -r requir.txt
+    pip install -r requirements.txt
 fi
 
 # Release wake lock
@@ -34,7 +34,10 @@ echo "  Run 'ls' to see your files."
 echo "  Start with: python add.py"
 echo "---------------------------------------"
 
-echo "cd ~/Shawshank" >> ~/.bashrc
+# Add to bashrc only if not already there
+if ! grep -q "cd ~/Shawshank" ~/.bashrc; then
+    echo "cd ~/Shawshank" >> ~/.bashrc
+fi
 
 # This keeps the user inside the Shawshank folder after the script ends
 exec bash
